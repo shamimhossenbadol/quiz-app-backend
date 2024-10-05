@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id         Int    @id @default(autoincrement())
+  name       String
+  number     String
+  email      String @unique
+  password   String
+  village    String
+  postOffice String
+  thana      String
+  zilla      String
+
+  role         Role      @default(USER)
+  coins        Int       @default(0)
+  otp          Int?
+  otpExpiresAt DateTime?
+
+  history      UserHistory?
+  winner1      QuizResult[]      @relation(name: "winner_1")
+  winner2      QuizResult[]      @relation(name: "winner_2")
+  winner3      QuizResult[]      @relation(name: "winner_3")
+  winner4      QuizResult[]      @relation(name: "winner_4")
+  winner5      QuizResult[]      @relation(name: "winner_5")
+  competitions UserCompetition[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("users")
+}
+
+model UserHistory {
+  id                    Int @id @default(autoincrement())
+  userId                Int @unique
+  estimatedCoins        Int @default(0)
+  participatedQuestions Int @default(0)
+  ignoredQuestions      Int @default(0)
+  rightAnswers          Int @default(0)
+  wrongAnswers          Int @default(0)
+  participatedQuiz      Int @default(0)
+  winner                Int @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("user_history")
+}
+
+model QuizResult {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
+  winner1Id   Int
+  winner2Id   Int
+  winner3Id   Int
+  winner4Id   Int
+  winner5Id   Int
+  prizeStatus String
+
+  winner1 User @relation(fields: [winner1Id], references: [id], name: "winner_1")
+  winner2 User @relation(fields: [winner2Id], references: [id], name: "winner_2")
+  winner3 User @relation(fields: [winner3Id], references: [id], name: "winner_3")
+  winner4 User @relation(fields: [winner4Id], references: [id], name: "winner_4")
+  winner5 User @relation(fields: [winner5Id], references: [id], name: "winner_5")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("quiz_results")
+}
+
+model UserCompetition {
+  id                    Int @id @default(autoincrement())
+  userId                Int
+  competitionId         Int
+  participatedQuestions Int
+  ignoredQuestions      Int
+  rightAnswers          Int
+  wrongAnswers          Int
+  coins                 Int
+
+  user        User        @relation(fields: [userId], references: [id])
+  competition Competition @relation(fields: [competitionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@unique([userId, competitionId])
+  @@map("user_competition")
+}
+
+model Question {
+  id          Int    @id @default(autoincrement())
+  question    String
+  option1     String
+  option2     String
+  option3     String
+  option4     String
+  rightAnswer String
+  year        Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("questions")
+}
+
+model GlobalData {
+  id              Int     @id @default(autoincrement())
+  alertDialog     String
+  showAlert       Boolean @default(false)
+  competitionTime Boolean @default(false)
+
+  @@map("global_data")
+}
+
+model Competition {
+  id           Int               @id @default(autoincrement())
+  name         String
+  date         DateTime
+  participants UserCompetition[]
+  entryFee     Int               @default(1000)
+
+  @@map("competitions")
+}
+
+model Quotation {
+  id        Int    @id @default(autoincrement())
+  text      String
+  reference String
+}
